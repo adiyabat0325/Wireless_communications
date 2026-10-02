@@ -1,6 +1,6 @@
 # Wireless Communications — Laboratory Exercises
 
-Утасгүй холбооны инженерчлэл II хичээлийн лабораторийн ажлууд: GNU Radio flowgraph, Python скрипт, оюутны гарын авлага.
+Утасгүй холбооны хичээлийн лабораторийн ажлууд: GNU Radio flowgraph, Python скрипт, оюутны гарын авлага.
 
 *Lab exercises for Wireless Communication Engineering II: GNU Radio flowgraphs, Python scripts and student guides (guides in Mongolian, technical terms in English).*
 
