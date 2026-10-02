@@ -1,0 +1,386 @@
+options:
+  parameters:
+    author: NUM Wireless Communication Lab
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    description: HackRF Pro -> GNU Radio OFDM Receiver -> decoded text packets.
+    generate_options: qt_gui
+    id: lab4_hackrf_ofdm_rx
+    output_language: python
+    run: 'True'
+    run_options: prompt
+    title: 'Lab 4c - OFDM packet receiver (HackRF Pro #2)'
+    window_size: 1400, 1000
+    comment: ''
+  states:
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    value: 2e6
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 100
+    rotation: 0
+    state: enabled
+- name: center_freq
+  id: variable
+  parameters:
+    value: 433.92e6
+    comment: Use only a frequency allowed in your lab / country
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 170
+    rotation: 0
+    state: enabled
+- name: fft_len
+  id: variable
+  parameters:
+    value: '64'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 240
+    rotation: 0
+    state: enabled
+- name: cp_len
+  id: variable
+  parameters:
+    value: '16'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 310
+    rotation: 0
+    state: enabled
+- name: packet_len
+  id: variable
+  parameters:
+    value: '64'
+    comment: bytes per packet
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 168
+    - 100
+    rotation: 0
+    state: enabled
+- name: len_key
+  id: variable
+  parameters:
+    value: '"packet_len"'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 168
+    - 170
+    rotation: 0
+    state: enabled
+- name: occupied_carriers
+  id: variable
+  parameters:
+    value: (list(range(-26, -21)) + list(range(-20, -7)) + list(range(-6, 0)) + list(range(1, 7)) + list(range(8, 21)) + list(range(22, 27)),)
+    comment: 48 data subcarriers (DC = 0 is not used)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 168
+    - 240
+    rotation: 0
+    state: enabled
+- name: pilot_carriers
+  id: variable
+  parameters:
+    value: ((-21, -7, 7, 21),)
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 168
+    - 310
+    rotation: 0
+    state: enabled
+- name: pilot_symbols
+  id: variable
+  parameters:
+    value: ((1, 1, 1, -1),)
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 168
+    - 380
+    rotation: 0
+    state: enabled
+- name: lna_gain
+  id: variable_qtgui_range
+  parameters:
+    label: '"RX LNA gain [dB]"'
+    rangeType: int
+    value: '16'
+    start: '0'
+    stop: '40'
+    step: '8'
+    widget: counter_slider
+    gui_hint: 0,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 100
+    rotation: 0
+    state: enabled
+- name: vga_gain
+  id: variable_qtgui_range
+  parameters:
+    label: '"RX VGA gain [dB]"'
+    rangeType: int
+    value: '20'
+    start: '0'
+    stop: '62'
+    step: '2'
+    widget: counter_slider
+    gui_hint: 0,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 180
+    rotation: 0
+    state: enabled
+- name: hackrf_rx
+  id: soapy_hackrf_source
+  parameters:
+    type: fc32
+    dev_args: '""'
+    samp_rate: samp_rate
+    bandwidth: '0'
+    center_freq: center_freq
+    amp: 'False'
+    gain: lna_gain
+    vga: vga_gain
+    comment: 'dev_args: leave empty for one HackRF; with two HackRFs on one PC use serial=<number from hackrf_info>'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 420
+    rotation: 0
+    state: enabled
+- name: ofdm_rx
+  id: digital_ofdm_rx
+  parameters:
+    fft_len: fft_len
+    cp_len: cp_len
+    packet_len_key: '"rx_len"'
+    occupied_carriers: occupied_carriers
+    pilot_carriers: pilot_carriers
+    pilot_symbols: pilot_symbols
+    sync_word1: None
+    sync_word2: None
+    header_mod: '"BPSK"'
+    payload_mod: '"QPSK"'
+    scramble_bits: 'False'
+    log: 'False'
+    comment: Must use the SAME parameters as the transmitter
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 420
+    rotation: 0
+    state: enabled
+- name: print_packets
+  id: blocks_file_sink
+  parameters:
+    file: '"/dev/stdout"'
+    type: byte
+    vlen: '1'
+    unbuffered: 'True'
+    append: 'False'
+    comment: Decoded packets are printed in the GRC console
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 420
+    rotation: 0
+    state: enabled
+- name: save_packets
+  id: blocks_file_sink
+  parameters:
+    file: '"rx_packets.txt"'
+    type: byte
+    vlen: '1'
+    unbuffered: 'True'
+    append: 'False'
+    comment: 'Packet error rate: python3 lab4_per.py rx_packets.txt'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 520
+    rotation: 0
+    state: enabled
+- name: spec
+  id: qtgui_freq_sink_x
+  parameters:
+    type: complex
+    name: '"RX spectrum"'
+    fftsize: '1024'
+    fc: center_freq
+    bw: samp_rate
+    average: '0.2'
+    ymin: '-110'
+    ymax: '-10'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 1,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 600
+    rotation: 0
+    state: enabled
+- name: wfall
+  id: qtgui_waterfall_sink_x
+  parameters:
+    type: complex
+    name: '"RX waterfall"'
+    fftsize: '1024'
+    fc: center_freq
+    bw: samp_rate
+    int_min: '-110'
+    int_max: '-30'
+    nconnections: '1'
+    gui_hint: 1,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 720
+    rotation: 0
+    state: enabled
+- name: tscope
+  id: qtgui_time_sink_x
+  parameters:
+    type: complex
+    name: '"RX samples (check: no clipping, |x| < 0.7)"'
+    size: '8192'
+    srate: samp_rate
+    ymin: '-1'
+    ymax: '1'
+    grid: 'True'
+    nconnections: '1'
+    entags: 'False'
+    gui_hint: 2,0,1,2
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 340
+    - 840
+    rotation: 0
+    state: enabled
+connections:
+- - hackrf_rx
+  - '0'
+  - ofdm_rx
+  - '0'
+- - ofdm_rx
+  - '0'
+  - print_packets
+  - '0'
+- - ofdm_rx
+  - '0'
+  - save_packets
+  - '0'
+- - hackrf_rx
+  - '0'
+  - spec
+  - '0'
+- - hackrf_rx
+  - '0'
+  - wfall
+  - '0'
+- - hackrf_rx
+  - '0'
+  - tscope
+  - '0'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2

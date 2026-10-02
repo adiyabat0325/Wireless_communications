@@ -1,0 +1,513 @@
+options:
+  parameters:
+    author: NUM Wireless Communication Lab
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    description: 'Lecture 3 slides 11-14: OFDM modulation with IFFT, cyclic prefix, sinc^2 subcarrier spectrum and loss of orthogonality under CFO.'
+    generate_options: qt_gui
+    id: lab1_ofdm_basics
+    output_language: python
+    run: 'True'
+    run_options: prompt
+    title: 'Lab 1 - OFDM basics: IFFT/FFT, CP, spectrum, CFO'
+    window_size: 1400, 1000
+    comment: ''
+  states:
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    value: 1e6
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 120
+    rotation: 0
+    state: enabled
+- name: fft_len
+  id: variable
+  parameters:
+    value: '64'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 190
+    rotation: 0
+    state: enabled
+- name: cp_len
+  id: variable
+  parameters:
+    value: '16'
+    comment: 'Change and re-run: 0, 4, 16'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 260
+    rotation: 0
+    state: enabled
+- name: n_act
+  id: variable_qtgui_range
+  parameters:
+    label: '"Active subcarriers"'
+    rangeType: int
+    value: '52'
+    start: '2'
+    stop: '62'
+    step: '2'
+    widget: counter_slider
+    gui_hint: 0,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 160
+    - 120
+    rotation: 0
+    state: enabled
+- name: cfo
+  id: variable_qtgui_range
+  parameters:
+    label: '"CFO [x subcarrier spacing]"'
+    rangeType: float
+    value: '0'
+    start: '-0.5'
+    stop: '0.5'
+    step: '0.01'
+    widget: counter_slider
+    gui_hint: 0,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 400
+    - 120
+    rotation: 0
+    state: enabled
+- name: mask
+  id: variable
+  parameters:
+    value: '[(1.0 if (1 <= k <= n_act//2 or k >= fft_len - n_act//2) else 0.0) / fft_len**0.5 for k in range(fft_len)]'
+    comment: DC (k=0) is always null
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 120
+    rotation: 0
+    state: enabled
+- name: rx_scale
+  id: variable
+  parameters:
+    value: '[1.0/fft_len**0.5]*fft_len'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 200
+    rotation: 0
+    state: enabled
+- name: bits_src
+  id: analog_random_source_x
+  parameters:
+    type: byte
+    min: '0'
+    max: '4'
+    num_samps: '100000'
+    repeat: 'True'
+    comment: Random 2-bit symbols (0..3)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 340
+    rotation: 0
+    state: enabled
+- name: qpsk_map
+  id: digital_chunks_to_symbols_xx
+  parameters:
+    in_type: byte
+    out_type: complex
+    symbol_table: '[(1+1j)/2**0.5, (-1+1j)/2**0.5, (1-1j)/2**0.5, (-1-1j)/2**0.5]'
+    dimension: '1'
+    num_ports: '1'
+    comment: 'Mod.: QPSK mapping'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 208
+    - 340
+    rotation: 0
+    state: enabled
+- name: s2p
+  id: blocks_stream_to_vector
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: 'S/P: fft_len symbols -> 1 vector'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 408
+    - 340
+    rotation: 0
+    state: enabled
+- name: sc_map
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: mask
+    vlen: fft_len
+    comment: 'Subcarrier mapping: null DC & band edges, scale 1/sqrt(N)'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 588
+    - 340
+    rotation: 0
+    state: enabled
+- name: ofdm_ifft
+  id: fft_vxx
+  parameters:
+    type: complex
+    fft_size: fft_len
+    forward: 'False'
+    window: window.rectangular(fft_len)
+    shift: 'False'
+    nthreads: '1'
+    comment: IFFT = OFDM modulation
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 788
+    - 340
+    rotation: 0
+    state: enabled
+- name: add_cp
+  id: digital_ofdm_cyclic_prefixer
+  parameters:
+    input_size: fft_len
+    cp_len: cp_len
+    rolloff: '0'
+    tagname: '""'
+    comment: Add cyclic prefix (P/S + CP)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 988
+    - 340
+    rotation: 0
+    state: enabled
+- name: throttle
+  id: blocks_throttle2
+  parameters:
+    type: complex
+    samples_per_second: samp_rate
+    vlen: '1'
+    ignoretag: 'True'
+    limit: auto
+    maximum: '0.1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 480
+    rotation: 0
+    state: enabled
+- name: chan
+  id: blocks_rotator_cc
+  parameters:
+    phase_inc: 2*3.141592653589793*cfo/fft_len
+    tag_inc_update: 'False'
+    comment: 'Channel = carrier frequency offset (CFO) only: x(n)*exp(j2pi*cfo*n/N)'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 480
+    rotation: 0
+    state: enabled
+- name: tx_spec
+  id: qtgui_freq_sink_x
+  parameters:
+    type: complex
+    name: '"OFDM spectrum (flat top, sinc^2 edges)"'
+    fftsize: '2048'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    fc: '0'
+    bw: samp_rate
+    average: '0.1'
+    ymin: '-80'
+    ymax: '0'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 1,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 440
+    - 560
+    rotation: 0
+    state: enabled
+- name: tx_time
+  id: qtgui_time_sink_x
+  parameters:
+    type: complex
+    name: '"OFDM time signal: 2 symbols (CP + data)"'
+    size: 2*(fft_len+cp_len)
+    srate: samp_rate
+    ymin: '-0.5'
+    ymax: '0.5'
+    grid: 'True'
+    nconnections: '1'
+    entags: 'False'
+    gui_hint: 1,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 440
+    - 680
+    rotation: 0
+    state: enabled
+- name: rm_cp
+  id: blocks_keep_m_in_n
+  parameters:
+    type: complex
+    m: fft_len
+    n: fft_len+cp_len
+    offset: cp_len
+    comment: 'Remove CP: keep last fft_len of every fft_len+cp_len'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 440
+    - 480
+    rotation: 0
+    state: enabled
+- name: rx_s2p
+  id: blocks_stream_to_vector
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 660
+    - 480
+    rotation: 0
+    state: enabled
+- name: ofdm_fft
+  id: fft_vxx
+  parameters:
+    type: complex
+    fft_size: fft_len
+    forward: 'True'
+    window: window.rectangular(fft_len)
+    shift: 'False'
+    nthreads: '1'
+    comment: FFT = OFDM demodulation
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 840
+    - 480
+    rotation: 0
+    state: enabled
+- name: rx_norm
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: rx_scale
+    vlen: fft_len
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1100
+    - 480
+    rotation: 0
+    state: enabled
+- name: p2s
+  id: blocks_vector_to_stream
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: P/S
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 480
+    rotation: 0
+    state: enabled
+- name: rx_const
+  id: qtgui_const_sink_x
+  parameters:
+    type: complex
+    name: '"Rx subcarrier symbols after FFT (CFO -> ICI)"'
+    size: '2048'
+    xmin: '-1.5'
+    xmax: '1.5'
+    ymin: '-1.5'
+    ymax: '1.5'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 2,0,1,2
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 580
+    rotation: 0
+    state: enabled
+connections:
+- - bits_src
+  - '0'
+  - qpsk_map
+  - '0'
+- - qpsk_map
+  - '0'
+  - s2p
+  - '0'
+- - s2p
+  - '0'
+  - sc_map
+  - '0'
+- - sc_map
+  - '0'
+  - ofdm_ifft
+  - '0'
+- - ofdm_ifft
+  - '0'
+  - add_cp
+  - '0'
+- - add_cp
+  - '0'
+  - throttle
+  - '0'
+- - throttle
+  - '0'
+  - chan
+  - '0'
+- - throttle
+  - '0'
+  - tx_spec
+  - '0'
+- - throttle
+  - '0'
+  - tx_time
+  - '0'
+- - chan
+  - '0'
+  - rm_cp
+  - '0'
+- - rm_cp
+  - '0'
+  - rx_s2p
+  - '0'
+- - rx_s2p
+  - '0'
+  - ofdm_fft
+  - '0'
+- - ofdm_fft
+  - '0'
+  - rx_norm
+  - '0'
+- - rx_norm
+  - '0'
+  - p2s
+  - '0'
+- - p2s
+  - '0'
+  - rx_const
+  - '0'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2

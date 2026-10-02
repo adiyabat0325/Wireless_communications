@@ -1,0 +1,238 @@
+options:
+  parameters:
+    author: NUM Wireless Communication Lab
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    description: 'Transmits ofdm_tx_frames.cfile (made with: python3 ofdm_lab5.py gen) in a loop.'
+    generate_options: qt_gui
+    id: lab5_hackrf_iq_tx
+    output_language: python
+    run: 'True'
+    run_options: prompt
+    title: 'Lab 5a - Transmit custom OFDM frames (HackRF Pro #1)'
+    window_size: 1400, 1000
+    comment: ''
+  states:
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    value: 4e6
+    comment: Must equal --fs of ofdm_lab5.py gen
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 100
+    rotation: 0
+    state: enabled
+- name: center_freq
+  id: variable
+  parameters:
+    value: 2.45e9
+    comment: Use only a frequency allowed in your lab / country
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 170
+    rotation: 0
+    state: enabled
+- name: tx_file
+  id: variable
+  parameters:
+    value: '"ofdm_tx_frames.cfile"'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 240
+    rotation: 0
+    state: enabled
+- name: tx_vga
+  id: variable_qtgui_range
+  parameters:
+    label: '"TX VGA gain [dB]"'
+    rangeType: int
+    value: '10'
+    start: '0'
+    stop: '47'
+    step: '1'
+    widget: counter_slider
+    gui_hint: 0,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 220
+    - 100
+    rotation: 0
+    state: enabled
+- name: bb_gain
+  id: variable_qtgui_range
+  parameters:
+    label: '"Baseband gain"'
+    rangeType: float
+    value: '1.0'
+    start: '0'
+    stop: '1.0'
+    step: '0.05'
+    widget: counter_slider
+    gui_hint: 0,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 220
+    - 180
+    rotation: 0
+    state: enabled
+- name: frames
+  id: blocks_file_source
+  parameters:
+    file: tx_file
+    type: complex
+    repeat: 'True'
+    vlen: '1'
+    begin_tag: pmt.PMT_NIL
+    offset: '0'
+    length: '0'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 380
+    rotation: 0
+    state: enabled
+- name: gain
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: bb_gain
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 260
+    - 400
+    rotation: 0
+    state: enabled
+- name: hackrf_tx
+  id: soapy_hackrf_sink
+  parameters:
+    type: fc32
+    dev_args: '""'
+    samp_rate: samp_rate
+    bandwidth: '0'
+    center_freq: center_freq
+    amp: 'False'
+    vga: tx_vga
+    comment: 'dev_args: leave empty for one HackRF; with two HackRFs on one PC use serial=<number from hackrf_info>'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 460
+    - 380
+    rotation: 0
+    state: enabled
+- name: spec
+  id: qtgui_freq_sink_x
+  parameters:
+    type: complex
+    name: '"TX spectrum"'
+    fftsize: '1024'
+    fc: center_freq
+    bw: samp_rate
+    average: '0.2'
+    ymin: '-120'
+    ymax: '-10'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 1,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 460
+    - 540
+    rotation: 0
+    state: enabled
+- name: tscope
+  id: qtgui_time_sink_x
+  parameters:
+    type: complex
+    name: '"TX frames"'
+    size: '8192'
+    srate: samp_rate
+    ymin: '-1'
+    ymax: '1'
+    grid: 'True'
+    nconnections: '1'
+    entags: 'False'
+    gui_hint: 1,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 460
+    - 660
+    rotation: 0
+    state: enabled
+connections:
+- - frames
+  - '0'
+  - gain
+  - '0'
+- - gain
+  - '0'
+  - hackrf_tx
+  - '0'
+- - gain
+  - '0'
+  - spec
+  - '0'
+- - gain
+  - '0'
+  - tscope
+  - '0'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2

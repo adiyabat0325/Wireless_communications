@@ -1,0 +1,300 @@
+options:
+  parameters:
+    author: NUM Wireless Communication Lab
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    description: 'Records capture_s seconds of IQ samples to rx_capture.cfile for offline processing with: python3 ofdm_lab5.py rx'
+    generate_options: qt_gui
+    id: lab5_hackrf_iq_rx
+    output_language: python
+    run: 'True'
+    run_options: prompt
+    title: 'Lab 5b - Capture OFDM frames to a file (HackRF Pro #2)'
+    window_size: 1400, 1000
+    comment: ''
+  states:
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    value: 4e6
+    comment: Must equal --fs of ofdm_lab5.py gen
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 100
+    rotation: 0
+    state: enabled
+- name: center_freq
+  id: variable
+  parameters:
+    value: 2.45e9
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 170
+    rotation: 0
+    state: enabled
+- name: capture_s
+  id: variable
+  parameters:
+    value: '1.0'
+    comment: seconds recorded
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 240
+    rotation: 0
+    state: enabled
+- name: rx_file
+  id: variable
+  parameters:
+    value: '"rx_capture.cfile"'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 310
+    rotation: 0
+    state: enabled
+- name: lna_gain
+  id: variable_qtgui_range
+  parameters:
+    label: '"RX LNA gain [dB]"'
+    rangeType: int
+    value: '16'
+    start: '0'
+    stop: '40'
+    step: '8'
+    widget: counter_slider
+    gui_hint: 0,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 220
+    - 100
+    rotation: 0
+    state: enabled
+- name: vga_gain
+  id: variable_qtgui_range
+  parameters:
+    label: '"RX VGA gain [dB]"'
+    rangeType: int
+    value: '20'
+    start: '0'
+    stop: '62'
+    step: '2'
+    widget: counter_slider
+    gui_hint: 0,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 220
+    - 180
+    rotation: 0
+    state: enabled
+- name: hackrf_rx
+  id: soapy_hackrf_source
+  parameters:
+    type: fc32
+    dev_args: '""'
+    samp_rate: samp_rate
+    bandwidth: '0'
+    center_freq: center_freq
+    amp: 'False'
+    gain: lna_gain
+    vga: vga_gain
+    comment: 'dev_args: leave empty for one HackRF; with two HackRFs on one PC use serial=<number from hackrf_info>'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 420
+    rotation: 0
+    state: enabled
+- name: skip
+  id: blocks_skiphead
+  parameters:
+    type: complex
+    num_items: int(0.5*samp_rate)
+    vlen: '1'
+    comment: Skip the first 0.5 s (gain settling)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 300
+    - 420
+    rotation: 0
+    state: enabled
+- name: head
+  id: blocks_head
+  parameters:
+    type: complex
+    num_items: int(capture_s*samp_rate)
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 480
+    - 420
+    rotation: 0
+    state: enabled
+- name: capture
+  id: blocks_file_sink
+  parameters:
+    file: rx_file
+    type: complex
+    vlen: '1'
+    unbuffered: 'False'
+    append: 'False'
+    comment: Re-running the flowgraph overwrites the file
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 660
+    - 420
+    rotation: 0
+    state: enabled
+- name: spec
+  id: qtgui_freq_sink_x
+  parameters:
+    type: complex
+    name: '"RX spectrum"'
+    fftsize: '1024'
+    fc: center_freq
+    bw: samp_rate
+    average: '0.2'
+    ymin: '-110'
+    ymax: '-10'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 1,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 300
+    - 560
+    rotation: 0
+    state: enabled
+- name: wfall
+  id: qtgui_waterfall_sink_x
+  parameters:
+    type: complex
+    name: '"RX waterfall"'
+    fftsize: '1024'
+    fc: center_freq
+    bw: samp_rate
+    int_min: '-110'
+    int_max: '-30'
+    nconnections: '1'
+    gui_hint: 1,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 300
+    - 680
+    rotation: 0
+    state: enabled
+- name: tscope
+  id: qtgui_time_sink_x
+  parameters:
+    type: complex
+    name: '"RX samples (check: no clipping, |x| < 0.7)"'
+    size: '16384'
+    srate: samp_rate
+    ymin: '-1'
+    ymax: '1'
+    grid: 'True'
+    nconnections: '1'
+    entags: 'False'
+    gui_hint: 2,0,1,2
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 300
+    - 800
+    rotation: 0
+    state: enabled
+connections:
+- - hackrf_rx
+  - '0'
+  - skip
+  - '0'
+- - skip
+  - '0'
+  - head
+  - '0'
+- - head
+  - '0'
+  - capture
+  - '0'
+- - hackrf_rx
+  - '0'
+  - spec
+  - '0'
+- - hackrf_rx
+  - '0'
+  - wfall
+  - '0'
+- - hackrf_rx
+  - '0'
+  - tscope
+  - '0'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2

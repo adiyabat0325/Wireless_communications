@@ -1,0 +1,784 @@
+options:
+  parameters:
+    author: NUM Wireless Communication Lab
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    description: 'Lecture 3 slides 6-9 and 15-17: time-dispersive channel, ISI, cyclic prefix (circulant channel) and one-tap Frequency Domain Equalizer.'
+    generate_options: qt_gui
+    id: lab2_multipath_cp_fde
+    output_language: python
+    run: 'True'
+    run_options: prompt
+    title: Lab 2 - Multipath, ISI, cyclic prefix and FDE
+    window_size: 1400, 1000
+    comment: ''
+  states:
+    coordinate:
+    - 8
+    - 8
+    rotation: 0
+    state: enabled
+blocks:
+- name: imp_numpy
+  id: import
+  parameters:
+    imports: import numpy
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 60
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    value: 1e6
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 120
+    rotation: 0
+    state: enabled
+- name: fft_len
+  id: variable
+  parameters:
+    value: '64'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 190
+    rotation: 0
+    state: enabled
+- name: cp_len
+  id: variable
+  parameters:
+    value: '16'
+    comment: 'Change and re-run: 0, 4, 16, 32'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 260
+    rotation: 0
+    state: enabled
+- name: n_used
+  id: variable
+  parameters:
+    value: '52'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 160
+    - 260
+    rotation: 0
+    state: enabled
+- name: mask
+  id: variable
+  parameters:
+    value: '[(1.0 if (1 <= k <= n_used//2 or k >= fft_len - n_used//2) else 0.0) / fft_len**0.5 for k in range(fft_len)]'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 160
+    - 330
+    rotation: 0
+    state: enabled
+- name: ch_sel
+  id: variable_qtgui_chooser
+  parameters:
+    label: '"Channel h(tau)"'
+    type: int
+    num_opts: '4'
+    value: '1'
+    option0: '0'
+    label0: '"AWGN only: h = [1]"'
+    option1: '1'
+    label1: '"2-path, delay 4 samples (< CP)"'
+    option2: '2'
+    label2: '"2-path, delay 24 samples (> CP)"'
+    option3: '3'
+    label3: '"8-tap multipath"'
+    widget: radio_buttons
+    orient: Qt.QVBoxLayout
+    gui_hint: 0,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 160
+    - 120
+    rotation: 0
+    state: enabled
+- name: snr_db
+  id: variable_qtgui_range
+  parameters:
+    label: '"SNR [dB]"'
+    rangeType: float
+    value: '30'
+    start: '0'
+    stop: '40'
+    step: '1'
+    widget: counter_slider
+    gui_hint: 0,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 400
+    - 120
+    rotation: 0
+    state: enabled
+- name: taps
+  id: variable
+  parameters:
+    value: '[(t + [0]*(32 - len(t))) for t in ([1.0], [1.0, 0, 0, 0, 0.6], [1.0] + [0]*23 + [0.6], [0.8, 0.5j, -0.3, 0.2+0.2j, 0.1, -0.1j, 0.05, 0.03])][ch_sel]'
+    comment: All tap sets zero-padded to 32 so the FIR history (timing) never changes
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 120
+    rotation: 0
+    state: enabled
+- name: H
+  id: variable
+  parameters:
+    value: numpy.fft.fft(taps, fft_len)
+    comment: Channel frequency response h~(k) = FFT of h
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 190
+    rotation: 0
+    state: enabled
+- name: eq_zf
+  id: variable
+  parameters:
+    value: (1.0/(fft_len**0.5 * H)).tolist()
+    comment: 'FDE: s^(k) = y~(k) / h~(k)'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 260
+    rotation: 0
+    state: enabled
+- name: no_eq
+  id: variable
+  parameters:
+    value: '[1.0/fft_len**0.5]*fft_len'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 330
+    rotation: 0
+    state: enabled
+- name: H_db
+  id: variable
+  parameters:
+    value: (20*numpy.log10(numpy.abs(H) + 1e-9)).tolist()
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 840
+    - 120
+    rotation: 0
+    state: enabled
+- name: noise_v
+  id: variable
+  parameters:
+    value: (n_used/fft_len)**0.5 * 10**(-snr_db/20.0)
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 840
+    - 190
+    rotation: 0
+    state: enabled
+- name: bits_src
+  id: analog_random_source_x
+  parameters:
+    type: byte
+    min: '0'
+    max: '4'
+    num_samps: '100000'
+    repeat: 'True'
+    comment: Random 2-bit symbols (0..3)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 420
+    rotation: 0
+    state: enabled
+- name: qpsk_map
+  id: digital_chunks_to_symbols_xx
+  parameters:
+    in_type: byte
+    out_type: complex
+    symbol_table: '[(1+1j)/2**0.5, (-1+1j)/2**0.5, (1-1j)/2**0.5, (-1-1j)/2**0.5]'
+    dimension: '1'
+    num_ports: '1'
+    comment: 'Mod.: QPSK mapping'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 208
+    - 420
+    rotation: 0
+    state: enabled
+- name: s2p
+  id: blocks_stream_to_vector
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: 'S/P: fft_len symbols -> 1 vector'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 408
+    - 420
+    rotation: 0
+    state: enabled
+- name: sc_map
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: mask
+    vlen: fft_len
+    comment: 'Subcarrier mapping: null DC & band edges, scale 1/sqrt(N)'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 588
+    - 420
+    rotation: 0
+    state: enabled
+- name: ofdm_ifft
+  id: fft_vxx
+  parameters:
+    type: complex
+    fft_size: fft_len
+    forward: 'False'
+    window: window.rectangular(fft_len)
+    shift: 'False'
+    nthreads: '1'
+    comment: IFFT = OFDM modulation
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 788
+    - 420
+    rotation: 0
+    state: enabled
+- name: add_cp
+  id: digital_ofdm_cyclic_prefixer
+  parameters:
+    input_size: fft_len
+    cp_len: cp_len
+    rolloff: '0'
+    tagname: '""'
+    comment: Add cyclic prefix (P/S + CP)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 988
+    - 420
+    rotation: 0
+    state: enabled
+- name: throttle
+  id: blocks_throttle2
+  parameters:
+    type: complex
+    samples_per_second: samp_rate
+    vlen: '1'
+    ignoretag: 'True'
+    limit: auto
+    maximum: '0.1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 560
+    rotation: 0
+    state: enabled
+- name: multipath
+  id: fir_filter_xxx
+  parameters:
+    type: ccc
+    decim: '1'
+    taps: taps
+    samp_delay: '0'
+    comment: 'Multipath channel: y(n) = sum_l h_l s(n-l)'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 560
+    rotation: 0
+    state: enabled
+- name: awgn
+  id: analog_noise_source_x
+  parameters:
+    type: complex
+    noise_type: analog.GR_GAUSSIAN
+    amp: noise_v
+    seed: '0'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 640
+    rotation: 0
+    state: enabled
+- name: chan
+  id: blocks_add_xx
+  parameters:
+    type: complex
+    num_inputs: '2'
+    vlen: '1'
+    comment: + n(t)
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 380
+    - 600
+    rotation: 0
+    state: enabled
+- name: rx_spec
+  id: qtgui_freq_sink_x
+  parameters:
+    type: complex
+    name: '"Rx spectrum (frequency selective fading)"'
+    fftsize: '2048'
+    fc: '0'
+    bw: samp_rate
+    average: '0.1'
+    ymin: '-80'
+    ymax: '10'
+    grid: 'True'
+    nconnections: '1'
+    gui_hint: 1,0,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 440
+    - 680
+    rotation: 0
+    state: enabled
+- name: rm_cp
+  id: blocks_keep_m_in_n
+  parameters:
+    type: complex
+    m: fft_len
+    n: fft_len+cp_len
+    offset: cp_len
+    comment: 'Remove CP: keep last fft_len of every fft_len+cp_len'
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 440
+    - 560
+    rotation: 0
+    state: enabled
+- name: rx_s2p
+  id: blocks_stream_to_vector
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 660
+    - 560
+    rotation: 0
+    state: enabled
+- name: ofdm_fft
+  id: fft_vxx
+  parameters:
+    type: complex
+    fft_size: fft_len
+    forward: 'True'
+    window: window.rectangular(fft_len)
+    shift: 'False'
+    nthreads: '1'
+    comment: FFT = OFDM demodulation
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 840
+    - 560
+    rotation: 0
+    state: enabled
+- name: raw
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: no_eq
+    vlen: fft_len
+    comment: No equalizer
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1100
+    - 520
+    rotation: 0
+    state: enabled
+- name: fde
+  id: blocks_multiply_const_vxx
+  parameters:
+    type: complex
+    const: eq_zf
+    vlen: fft_len
+    comment: Zero-forcing FDE
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1100
+    - 600
+    rotation: 0
+    state: enabled
+- name: p2s_raw
+  id: blocks_vector_to_stream
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 520
+    rotation: 0
+    state: enabled
+- name: p2s_eq
+  id: blocks_vector_to_stream
+  parameters:
+    type: complex
+    num_items: fft_len
+    vlen: '1'
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 600
+    rotation: 0
+    state: enabled
+- name: const
+  id: qtgui_const_sink_x
+  parameters:
+    type: complex
+    name: '"Subcarrier symbols: before (blue) / after (red) FDE"'
+    size: '2048'
+    xmin: '-2'
+    xmax: '2'
+    ymin: '-2'
+    ymax: '2'
+    grid: 'True'
+    nconnections: '2'
+    label1: '"no EQ"'
+    label2: '"ZF FDE"'
+    gui_hint: 1,1,1,1
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1500
+    - 540
+    rotation: 0
+    state: enabled
+- name: mag2
+  id: blocks_complex_to_mag_squared
+  parameters:
+    vlen: fft_len
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1100
+    - 700
+    rotation: 0
+    state: enabled
+- name: to_db
+  id: blocks_nlog10_ff
+  parameters:
+    n: '10'
+    vlen: fft_len
+    k: -10*numpy.log10(fft_len)
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 700
+    rotation: 0
+    state: enabled
+- name: h_theory
+  id: blocks_vector_source_x
+  parameters:
+    type: float
+    vector: H_db
+    tags: '[]'
+    repeat: 'True'
+    vlen: fft_len
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1100
+    - 800
+    rotation: 0
+    state: enabled
+- name: h_plot
+  id: qtgui_vector_sink_f
+  parameters:
+    vlen: fft_len
+    x_start: '0'
+    x_step: '1'
+    x_axis_label: '"Subcarrier index k (k > fft_len/2 = negative freq.)"'
+    y_axis_label: '"dB"'
+    name: '"|y~(k)|^2 measured vs |h~(k)|^2 theory"'
+    ymin: '-30'
+    ymax: '10'
+    grid: 'True'
+    average: '0.1'
+    nconnections: '2'
+    label1: '"measured"'
+    label2: '"theory |h~(k)|^2"'
+    gui_hint: 2,0,1,2
+    comment: ''
+  states:
+    alias: ''
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1500
+    - 720
+    rotation: 0
+    state: enabled
+connections:
+- - bits_src
+  - '0'
+  - qpsk_map
+  - '0'
+- - qpsk_map
+  - '0'
+  - s2p
+  - '0'
+- - s2p
+  - '0'
+  - sc_map
+  - '0'
+- - sc_map
+  - '0'
+  - ofdm_ifft
+  - '0'
+- - ofdm_ifft
+  - '0'
+  - add_cp
+  - '0'
+- - add_cp
+  - '0'
+  - throttle
+  - '0'
+- - throttle
+  - '0'
+  - multipath
+  - '0'
+- - multipath
+  - '0'
+  - chan
+  - '0'
+- - awgn
+  - '0'
+  - chan
+  - '1'
+- - chan
+  - '0'
+  - rx_spec
+  - '0'
+- - chan
+  - '0'
+  - rm_cp
+  - '0'
+- - rm_cp
+  - '0'
+  - rx_s2p
+  - '0'
+- - rx_s2p
+  - '0'
+  - ofdm_fft
+  - '0'
+- - ofdm_fft
+  - '0'
+  - raw
+  - '0'
+- - ofdm_fft
+  - '0'
+  - fde
+  - '0'
+- - raw
+  - '0'
+  - p2s_raw
+  - '0'
+- - fde
+  - '0'
+  - p2s_eq
+  - '0'
+- - p2s_raw
+  - '0'
+  - const
+  - '0'
+- - p2s_eq
+  - '0'
+  - const
+  - '1'
+- - ofdm_fft
+  - '0'
+  - mag2
+  - '0'
+- - mag2
+  - '0'
+  - to_db
+  - '0'
+- - to_db
+  - '0'
+  - h_plot
+  - '0'
+- - h_theory
+  - '0'
+  - h_plot
+  - '1'
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2
